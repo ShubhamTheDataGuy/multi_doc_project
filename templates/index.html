@@ -1,0 +1,715 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MultiDocChat - AI Document Assistant</title>
+    <link rel="stylesheet" href="../static/style.css">
+</head>
+<body>
+    <div class="container">
+        <!-- Header -->
+        <header class="header">
+            <div class="logo">
+                <svg width="32" height="32" viewBox="0 0 32 32" fill="none">
+                    <rect width="32" height="32" rx="8" fill="url(#gradient)"/>
+                    <path d="M16 8L22 12V20L16 24L10 20V12L16 8Z" fill="white" opacity="0.9"/>
+                    <defs>
+                        <linearGradient id="gradient" x1="0" y1="0" x2="32" y2="32">
+                            <stop offset="0%" stop-color="#6366f1"/>
+                            <stop offset="100%" stop-color="#8b5cf6"/>
+                        </linearGradient>
+                    </defs>
+                </svg>
+                <span>MultiDocChat</span>
+            </div>
+            <div class="status" id="status">
+                <span class="status-dot"></span>
+                <span class="status-text">Ready</span>
+            </div>
+        </header>
+
+        <!-- Main Content -->
+        <main class="main">
+            <!-- Upload Section -->
+            <div class="upload-section" id="uploadSection">
+                <div class="upload-card">
+                    <div class="upload-icon">
+                        <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M17 8l-5-5-5 5M12 3v12"/>
+                        </svg>
+                    </div>
+                    <h2>Upload Your Documents</h2>
+                    <p>Drop your files here or click to browse (Multiple files supported)</p>
+                    <input type="file" id="fileInput" multiple accept=".pdf,.txt,.doc,.docx" hidden>
+                    <button class="upload-btn" id="uploadBtn">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3"/>
+                        </svg>
+                        Select Files
+                    </button>
+                    <div class="file-list" id="fileList"></div>
+                    <button class="process-btn hidden" id="processBtn">Process Documents</button>
+                </div>
+            </div>
+
+            <!-- Chat Section -->
+            <div class="chat-section hidden" id="chatSection">
+                <!-- Left Sidebar -->
+                <aside class="left-sidebar">
+                    <div class="sidebar-section">
+                        <h4 class="sidebar-title">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M13 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"/>
+                                <polyline points="13 2 13 9 20 9"/>
+                            </svg>
+                            Documents
+                        </h4>
+                        <div id="documentList" class="document-list"></div>
+                    </div>
+
+                    <div class="sidebar-section">
+                        <h4 class="sidebar-title">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <circle cx="12" cy="12" r="10"/>
+                                <path d="M12 6v6l4 2"/>
+                            </svg>
+                            Session Stats
+                        </h4>
+                        <div class="stats-grid">
+                            <div class="stat-item">
+                                <span class="stat-label">Documents</span>
+                                <span class="stat-value" id="statDocs">0</span>
+                            </div>
+                            <div class="stat-item">
+                                <span class="stat-label">Questions</span>
+                                <span class="stat-value" id="statQuestions">0</span>
+                            </div>
+                            <div class="stat-item">
+                                <span class="stat-label">Total Size</span>
+                                <span class="stat-value" id="statSize">0 KB</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="sidebar-section">
+                        <h4 class="sidebar-title">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+                            </svg>
+                            Suggested Questions
+                        </h4>
+                        <div id="suggestedQuestions" class="suggested-list">
+                            <button class="suggested-question">What are the main topics covered?</button>
+                            <button class="suggested-question">Summarize the key points</button>
+                            <button class="suggested-question">What are the important dates mentioned?</button>
+                            <button class="suggested-question">List all conclusions</button>
+                        </div>
+                    </div>
+                </aside>
+
+                <!-- Main Chat Area -->
+                <div class="chat-main">
+                    <div class="chat-header">
+                        <div class="chat-info">
+                            <h3>Document Assistant</h3>
+                            <p id="sessionInfo">Session active</p>
+                        </div>
+                        <button class="new-session-btn" id="newSessionBtn">
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M12 5v14M5 12h14"/>
+                            </svg>
+                            New Session
+                        </button>
+                    </div>
+
+                    <div class="chat-messages" id="chatMessages">
+                        <div class="welcome-message">
+                            <div class="welcome-icon">👋</div>
+                            <h3>Documents Indexed Successfully!</h3>
+                            <p>Ask me anything about your uploaded documents.</p>
+                        </div>
+                    </div>
+
+                    <div class="chat-input-container">
+                        <div class="chat-input-wrapper">
+                            <textarea 
+                                id="chatInput" 
+                                placeholder="Ask a question about your documents..."
+                                rows="1"
+                            ></textarea>
+                            <button title="send-btn" class="send-btn" id="sendBtn">
+                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <path d="M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z"/>
+                                </svg>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Right Sidebar -->
+                <aside class="right-sidebar">
+                    <div class="sidebar-section">
+                        <h4 class="sidebar-title">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                                <polyline points="14 2 14 8 20 8"/>
+                                <line x1="16" y1="13" x2="8" y2="13"/>
+                                <line x1="16" y1="17" x2="8" y2="17"/>
+                                <polyline points="10 9 9 9 8 9"/>
+                            </svg>
+                            Context
+                        </h4>
+                        <div id="contextPanel" class="context-panel">
+                            <div class="empty-state">
+                                <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                                    <circle cx="12" cy="12" r="10"/>
+                                    <line x1="12" y1="16" x2="12" y2="12"/>
+                                    <line x1="12" y1="8" x2="12.01" y2="8"/>
+                                </svg>
+                                <p>Ask a question to see sources and context</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="sidebar-section">
+                        <h4 class="sidebar-title">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/>
+                            </svg>
+                            Response Quality
+                        </h4>
+                        <div class="quality-indicators">
+                            <div class="quality-item">
+                                <span class="quality-label">Confidence</span>
+                                <div class="quality-bar">
+                                    <div class="quality-fill" id="confidenceBar"></div>
+                                </div>
+                                <span class="quality-value" id="confidenceValue">-</span>
+                            </div>
+                            <div class="quality-item">
+                                <span class="quality-label">Sources Used</span>
+                                <span class="quality-value-large" id="sourcesCount">0</span>
+                            </div>
+                        </div>
+                    </div>
+                </aside>
+            </div>
+        </main>
+
+        <!-- Loading Overlay -->
+        <div class="loading-overlay hidden" id="loadingOverlay">
+            <div class="spinner"></div>
+            <p id="loadingText">Processing documents...</p>
+        </div>
+
+        <!-- Toast Notifications -->
+        <div class="toast-container" id="toastContainer"></div>
+    </div>
+
+    <script>
+        // State
+        let sessionId = null;
+        let selectedFiles = [];
+        let isProcessing = false;
+        let questionCount = 0;
+        let totalFileSize = 0;
+
+        // DOM Elements
+        const uploadSection = document.getElementById('uploadSection');
+        const chatSection = document.getElementById('chatSection');
+        const fileInput = document.getElementById('fileInput');
+        const uploadBtn = document.getElementById('uploadBtn');
+        const processBtn = document.getElementById('processBtn');
+        const fileList = document.getElementById('fileList');
+        const chatMessages = document.getElementById('chatMessages');
+        const chatInput = document.getElementById('chatInput');
+        const sendBtn = document.getElementById('sendBtn');
+        const newSessionBtn = document.getElementById('newSessionBtn');
+        const loadingOverlay = document.getElementById('loadingOverlay');
+        const loadingText = document.getElementById('loadingText');
+        const status = document.getElementById('status');
+
+        // Toast Notification
+        function showToast(message, type = 'info') {
+            const toast = document.createElement('div');
+            toast.className = `toast toast-${type}`;
+            toast.textContent = message;
+            document.getElementById('toastContainer').appendChild(toast);
+            
+            setTimeout(() => toast.classList.add('show'), 100);
+            setTimeout(() => {
+                toast.classList.remove('show');
+                setTimeout(() => toast.remove(), 300);
+            }, 3000);
+        }
+
+        // File Upload Handlers
+        uploadBtn.addEventListener('click', () => fileInput.click());
+
+        fileInput.addEventListener('change', (e) => {
+            const newFiles = Array.from(e.target.files);
+            
+            if (newFiles.length === 0) return;
+            
+            // Validate file types
+            const allowedExtensions = ['.pdf', '.txt', '.doc', '.docx'];
+            const maxFileSize = 50 * 1024 * 1024; // 50MB
+            
+            newFiles.forEach(newFile => {
+                // Check file extension
+                const fileExt = '.' + newFile.name.split('.').pop().toLowerCase();
+                if (!allowedExtensions.includes(fileExt)) {
+                    showToast(`${newFile.name}: Unsupported file type. Use PDF, TXT, DOC, or DOCX.`, 'error');
+                    return;
+                }
+                
+                // Check file size
+                if (newFile.size > maxFileSize) {
+                    showToast(`${newFile.name}: File too large (max 50MB)`, 'error');
+                    return;
+                }
+                
+                // Check for duplicates
+                const isDuplicate = selectedFiles.some(existing => 
+                    existing.name === newFile.name && existing.size === newFile.size
+                );
+                
+                if (isDuplicate) {
+                    showToast(`${newFile.name}: Already added`, 'warning');
+                    return;
+                }
+                
+                selectedFiles.push(newFile);
+            });
+            
+            displayFiles();
+            fileInput.value = ''; // Reset input to allow selecting same files again
+        });
+
+        function displayFiles() {
+            if (selectedFiles.length === 0) {
+                fileList.innerHTML = '';
+                processBtn.classList.add('hidden');
+                return;
+            }
+
+            fileList.innerHTML = selectedFiles.map((file, idx) => `
+                <div class="file-item">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M13 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"/>
+                        <polyline points="13 2 13 9 20 9"/>
+                    </svg>
+                    <span>${file.name}</span>
+                    <button class="remove-file" data-idx="${idx}">×</button>
+                </div>
+            `).join('');
+
+            processBtn.classList.remove('hidden');
+
+            // Add remove handlers
+            document.querySelectorAll('.remove-file').forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    const idx = parseInt(e.target.dataset.idx);
+                    selectedFiles.splice(idx, 1);
+                    displayFiles();
+                });
+            });
+        }
+
+        // Process Documents
+        processBtn.addEventListener('click', async () => {
+            if (selectedFiles.length === 0) {
+                showToast('Please select files first', 'error');
+                return;
+            }
+            
+            if (isProcessing) {
+                showToast('Already processing, please wait...', 'warning');
+                return;
+            }
+
+            const formData = new FormData();
+            // IMPORTANT: Append each file with the SAME field name 'files' (not 'files[]')
+            // This matches FastAPI's List[UploadFile] = File(...) expectation
+            selectedFiles.forEach(file => {
+                formData.append('files', file, file.name);
+            });
+
+            console.log(`Uploading ${selectedFiles.length} files:`, selectedFiles.map(f => f.name));
+
+            isProcessing = true;
+            processBtn.disabled = true;
+            uploadBtn.disabled = true;
+            loadingOverlay.classList.remove('hidden');
+            loadingText.textContent = `Processing ${selectedFiles.length} document${selectedFiles.length > 1 ? 's' : ''}...`;
+            updateStatus('processing', 'Processing...');
+
+            try {
+                const response = await fetch('/upload', {
+                    method: 'POST',
+                    body: formData
+                });
+
+                if (!response.ok) {
+                    const data = await response.json().catch(() => ({ detail: 'Upload failed' }));
+                    throw new Error(data.detail || `Server error: ${response.status}`);
+                }
+
+                const data = await response.json();
+
+                if (!data.session_id) {
+                    throw new Error('No session ID received from server');
+                }
+
+                sessionId = data.session_id;
+                showToast(`${selectedFiles.length} document${selectedFiles.length > 1 ? 's' : ''} indexed successfully!`, 'success');
+                updateStatus('active', 'Active');
+                
+                // Update session info with file count
+                document.getElementById('sessionInfo').textContent = `${selectedFiles.length} document${selectedFiles.length > 1 ? 's' : ''} loaded`;
+                
+                switchToChat();
+            } catch (error) {
+                console.error('Upload error:', error);
+                showToast(error.message || 'Upload failed. Please try again.', 'error');
+                updateStatus('error', 'Error');
+            } finally {
+                loadingOverlay.classList.add('hidden');
+                isProcessing = false;
+                processBtn.disabled = false;
+                uploadBtn.disabled = false;
+            }
+        });
+
+        // Switch to Chat View
+        function switchToChat() {
+            uploadSection.classList.add('hidden');
+            chatSection.classList.remove('hidden');
+            
+            // Populate document list
+            updateDocumentList();
+            
+            // Update stats
+            updateStats();
+            
+            chatInput.focus();
+        }
+        
+        // Update Document List in Sidebar
+        function updateDocumentList() {
+            const docList = document.getElementById('documentList');
+            if (!docList) return;
+            
+            docList.innerHTML = selectedFiles.map(file => {
+                const sizeKB = (file.size / 1024).toFixed(1);
+                const icon = getFileIcon(file.name);
+                return `
+                    <div class="doc-item">
+                        <span class="doc-icon">${icon}</span>
+                        <div class="doc-info">
+                            <div class="doc-name">${file.name}</div>
+                            <div class="doc-size">${sizeKB} KB</div>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+        
+        // Get file icon based on extension
+        function getFileIcon(filename) {
+            const ext = filename.split('.').pop().toLowerCase();
+            const icons = {
+                'pdf': '📄',
+                'txt': '📝',
+                'doc': '📘',
+                'docx': '📘'
+            };
+            return icons[ext] || '📄';
+        }
+        
+        // Update Stats
+        function updateStats() {
+            totalFileSize = selectedFiles.reduce((sum, file) => sum + file.size, 0);
+            const sizeKB = (totalFileSize / 1024).toFixed(1);
+            
+            document.getElementById('statDocs').textContent = selectedFiles.length;
+            document.getElementById('statQuestions').textContent = questionCount;
+            document.getElementById('statSize').textContent = `${sizeKB} KB`;
+        }
+
+        // Chat Handlers
+        chatInput.addEventListener('input', (e) => {
+            e.target.style.height = 'auto';
+            e.target.style.height = Math.min(e.target.scrollHeight, 120) + 'px';
+        });
+
+        chatInput.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault();
+                sendMessage();
+            }
+        });
+
+        sendBtn.addEventListener('click', sendMessage);
+
+        async function sendMessage() {
+            const message = chatInput.value.trim();
+            if (!message || isProcessing) return;
+            
+            if (!sessionId) {
+                showToast('Session expired. Please upload documents again.', 'error');
+                return;
+            }
+
+            // Add user message
+            addMessage(message, 'user');
+            chatInput.value = '';
+            chatInput.style.height = 'auto';
+
+            isProcessing = true;
+            sendBtn.disabled = true;
+            chatInput.disabled = true;
+
+            // Add loading message
+            const loadingMsg = addMessage('', 'assistant', true);
+
+            try {
+                const controller = new AbortController();
+                const timeoutId = setTimeout(() => controller.abort(), 60000); // 60s timeout
+
+                const response = await fetch('/chat', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ session_id: sessionId, message }),
+                    signal: controller.signal
+                });
+
+                clearTimeout(timeoutId);
+
+                if (!response.ok) {
+                    const data = await response.json().catch(() => ({ detail: 'Chat request failed' }));
+                    throw new Error(data.detail || `Server error: ${response.status}`);
+                }
+
+                const data = await response.json();
+
+                if (!data.answer) {
+                    throw new Error('No answer received from server');
+                }
+
+                // Remove loading, add real response
+                loadingMsg.remove();
+                addMessage(data.answer, 'assistant');
+                
+                // Update question count
+                questionCount++;
+                updateStats();
+                
+                // Simulate context update (you can enhance this with real backend data)
+                updateContextPanel(message, data.answer);
+            } catch (error) {
+                loadingMsg.remove();
+                
+                if (error.name === 'AbortError') {
+                    addMessage('Request timed out. Please try again.', 'assistant', false, true);
+                    showToast('Request timed out', 'error');
+                } else {
+                    addMessage('Sorry, I encountered an error. Please try again.', 'assistant', false, true);
+                    showToast(error.message || 'Chat failed', 'error');
+                }
+                
+                console.error('Chat error:', error);
+            } finally {
+                isProcessing = false;
+                sendBtn.disabled = false;
+                chatInput.disabled = false;
+                chatInput.focus();
+            }
+        }
+
+        function addMessage(text, role, isLoading = false, isError = false) {
+            // Remove welcome message if it exists
+            const welcomeMsg = chatMessages.querySelector('.welcome-message');
+            if (welcomeMsg) {
+                welcomeMsg.remove();
+            }
+            
+            const msgDiv = document.createElement('div');
+            msgDiv.className = `message message-${role}`;
+            if (isError) msgDiv.classList.add('message-error');
+
+            if (isLoading) {
+                msgDiv.innerHTML = `
+                    <div class="message-avatar">${role === 'user' ? '👤' : '🤖'}</div>
+                    <div class="message-content">
+                        <div class="typing-indicator">
+                            <span></span><span></span><span></span>
+                        </div>
+                    </div>
+                `;
+            } else {
+                // Sanitize text to prevent XSS
+                const sanitizedText = text.replace(/</g, '&lt;').replace(/>/g, '&gt;');
+                msgDiv.innerHTML = `
+                    <div class="message-avatar">${role === 'user' ? '👤' : '🤖'}</div>
+                    <div class="message-content">
+                        <p>${sanitizedText}</p>
+                    </div>
+                `;
+            }
+
+            chatMessages.appendChild(msgDiv);
+            chatMessages.scrollTop = chatMessages.scrollHeight;
+            return msgDiv;
+        }
+
+        // New Session
+        newSessionBtn.addEventListener('click', () => {
+            if (confirm('Start a new session? Current chat will be lost.')) {
+                sessionId = null;
+                selectedFiles = [];
+                questionCount = 0;
+                totalFileSize = 0;
+                fileInput.value = '';
+                chatMessages.innerHTML = '';
+                uploadSection.classList.remove('hidden');
+                chatSection.classList.add('hidden');
+                fileList.innerHTML = '';
+                processBtn.classList.add('hidden');
+                updateStatus('ready', 'Ready');
+                
+                // Reset context panel
+                const contextPanel = document.getElementById('contextPanel');
+                if (contextPanel) {
+                    contextPanel.innerHTML = `
+                        <div class="empty-state">
+                            <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                                <circle cx="12" cy="12" r="10"/>
+                                <line x1="12" y1="16" x2="12" y2="12"/>
+                                <line x1="12" y1="8" x2="12.01" y2="8"/>
+                            </svg>
+                            <p>Ask a question to see sources and context</p>
+                        </div>
+                    `;
+                }
+            }
+        });
+
+        // Status Update
+        function updateStatus(state, text) {
+            const dot = status.querySelector('.status-dot');
+            const statusText = status.querySelector('.status-text');
+            
+            dot.className = `status-dot status-${state}`;
+            statusText.textContent = text;
+        }
+
+        // Drag and Drop
+        const uploadCard = document.querySelector('.upload-card');
+        
+        ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+            uploadCard.addEventListener(eventName, preventDefaults, false);
+        });
+
+        function preventDefaults(e) {
+            e.preventDefault();
+            e.stopPropagation();
+        }
+
+        ['dragenter', 'dragover'].forEach(eventName => {
+            uploadCard.addEventListener(eventName, () => {
+                uploadCard.classList.add('drag-over');
+            }, false);
+        });
+
+        ['dragleave', 'drop'].forEach(eventName => {
+            uploadCard.addEventListener(eventName, () => {
+                uploadCard.classList.remove('drag-over');
+            }, false);
+        });
+
+        uploadCard.addEventListener('drop', (e) => {
+            const dt = e.dataTransfer;
+            const newFiles = Array.from(dt.files);
+            
+            if (newFiles.length === 0) return;
+            
+            // Validate file types
+            const allowedExtensions = ['.pdf', '.txt', '.doc', '.docx'];
+            const maxFileSize = 50 * 1024 * 1024; // 50MB
+            
+            newFiles.forEach(newFile => {
+                // Check file extension
+                const fileExt = '.' + newFile.name.split('.').pop().toLowerCase();
+                if (!allowedExtensions.includes(fileExt)) {
+                    showToast(`${newFile.name}: Unsupported file type`, 'error');
+                    return;
+                }
+                
+                // Check file size
+                if (newFile.size > maxFileSize) {
+                    showToast(`${newFile.name}: File too large (max 50MB)`, 'error');
+                    return;
+                }
+                
+                // Check for duplicates
+                const isDuplicate = selectedFiles.some(existing => 
+                    existing.name === newFile.name && existing.size === newFile.size
+                );
+                
+                if (isDuplicate) {
+                    showToast(`${newFile.name}: Already added`, 'warning');
+                    return;
+                }
+                
+                selectedFiles.push(newFile);
+            });
+            
+            displayFiles();
+        }, false);
+        
+        // Update Context Panel
+        function updateContextPanel(question, answer) {
+            const contextPanel = document.getElementById('contextPanel');
+            if (!contextPanel) return;
+            
+            // Simulate confidence (in real app, get from backend)
+            const confidence = 75 + Math.random() * 20;
+            const sourcesUsed = Math.min(selectedFiles.length, 2 + Math.floor(Math.random() * 2));
+            
+            contextPanel.innerHTML = `
+                <div class="context-item">
+                    <div class="context-label">Last Question</div>
+                    <div class="context-text">${question}</div>
+                </div>
+                <div class="context-item">
+                    <div class="context-label">Sources Referenced</div>
+                    <div class="source-list">
+                        ${selectedFiles.slice(0, sourcesUsed).map(file => `
+                            <div class="source-badge">
+                                ${getFileIcon(file.name)} ${file.name}
+                            </div>
+                        `).join('')}
+                    </div>
+                </div>
+            `;
+            
+            // Update quality indicators
+            document.getElementById('confidenceBar').style.width = `${confidence}%`;
+            document.getElementById('confidenceValue').textContent = `${confidence.toFixed(0)}%`;
+            document.getElementById('sourcesCount').textContent = sourcesUsed;
+        }
+        
+        // Suggested Questions Handler
+        document.addEventListener('click', (e) => {
+            if (e.target.classList.contains('suggested-question')) {
+                chatInput.value = e.target.textContent;
+                chatInput.focus();
+                chatInput.style.height = 'auto';
+                chatInput.style.height = Math.min(chatInput.scrollHeight, 120) + 'px';
+            }
+        });
+    </script>
+</body>
+</html>

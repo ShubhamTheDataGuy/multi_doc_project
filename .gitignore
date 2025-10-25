@@ -1,0 +1,51 @@
+# Python-generated files
+__pycache__/
+*.py[oc]
+build/
+dist/
+wheels/
+*.egg-info
+
+# Virtual environments
+.venv/
+venv/
+ENV/
+
+# Dependencies (if using pip or similar)
+Pipfile.lock
+requirements.txt  # Only if you don't want to track it; usually you do
+
+# Logs and databases
+*.log
+logs/
+*.sqlite
+*.db
+
+# Environment variables
+.env
+.env.local
+.env.*.local
+
+# IDE/editor files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS-specific files
+.DS_Store  # macOS
+Thumbs.db  # Windows
+ehthumbs.db
+
+# Testing/cache
+.coverage
+htmlcov/
+.cache/
+.pytest_cache/
+
+# Documentation build
+docs/_build/
+
+# Jupyter notebooks (if applicable)
+.ipynb_checkpoints/
