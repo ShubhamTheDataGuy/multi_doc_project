@@ -13,7 +13,7 @@ ENV/
 
 # Dependencies (if using pip or similar)
 Pipfile.lock
-requirements.txt  # Only if you don't want to track it; usually you do
+  # Only if you don't want to track it; usually you do
 
 # Logs and databases
 *.log
