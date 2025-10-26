@@ -1,20 +1,18 @@
 from __future__ import annotations
 import os
+import time
+import shutil
 from pathlib import Path
 from typing import Dict, List
 
-from fastapi import FastAPI, File, UploadFile, HTTPException, Request
-from fastapi.responses import HTMLResponse
-from fastapi.staticfiles import StaticFiles
+from fastapi import FastAPI, File, UploadFile, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.templating import Jinja2Templates
 from pydantic import BaseModel
 
 from multi_doc_chat.src.document_ingestion.data_ingestion import ChatIngestor
 from multi_doc_chat.src.document_chat.retrieval import ConversationalRAG
 from langchain_core.messages import HumanMessage, AIMessage
 from multi_doc_chat.exception.custom_exception import DocumentPortalException
-
 
 # ----------------------------
 # FastAPI initialization
@@ -30,18 +28,37 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Static and templates
-BASE_DIR = Path(__file__).resolve().parent
-static_dir = BASE_DIR / "static"
-templates_dir = BASE_DIR / "templates"
-app.mount("/static", StaticFiles(directory=str(static_dir)), name="static")
-templates = Jinja2Templates(directory=str(templates_dir))
-
-
 # ----------------------------
 # Simple in-memory chat history
 # ----------------------------
 SESSIONS: Dict[str, List[dict]] = {}
+
+# ----------------------------
+# Paths for cleanup
+# ----------------------------
+DATA_DIR = Path("data")
+FAISS_DIR = Path("faiss_index")
+
+
+def cleanup_old_files(max_age_minutes: int = 2):
+    """
+    Delete session folders older than max_age_minutes from data/ and faiss_index/.
+    """
+    now = time.time()
+    max_age = max_age_minutes * 60  # Convert minutes to seconds
+
+    for folder in [DATA_DIR, FAISS_DIR]:
+        if not folder.exists():
+            continue
+        for item in folder.iterdir():
+            if item.is_dir():
+                age = now - item.stat().st_mtime
+                if age > max_age:
+                    try:
+                        shutil.rmtree(item)
+                        print(f"[Cleanup] Removed old session folder: {item}")
+                    except Exception as e:
+                        print(f"[Cleanup] Failed to remove {item}: {e}")
 
 
 # ----------------------------
@@ -49,6 +66,7 @@ SESSIONS: Dict[str, List[dict]] = {}
 # ----------------------------
 class FastAPIFileAdapter:
     """Adapt FastAPI UploadFile to a simple object with .name and .getbuffer()."""
+
     def __init__(self, uf: UploadFile):
         self._uf = uf
         self.name = uf.filename or "file"
@@ -84,20 +102,19 @@ def health() -> Dict[str, str]:
     return {"status": "ok"}
 
 
-@app.get("/", response_class=HTMLResponse)
-def home(request: Request) -> HTMLResponse:
-    return templates.TemplateResponse("index.html", {"request": request})
-
-
 @app.post("/upload", response_model=UploadResponse)
 async def upload(files: List[UploadFile] = File(...)) -> UploadResponse:
     if not files:
         raise HTTPException(status_code=400, detail="No files uploaded")
 
     try:
+        # Trigger cleanup before processing new upload (2-minute test mode)
+        cleanup_old_files(max_age_minutes=2)
+
         # Wrap FastAPI files to preserve filename/ext and provide a read buffer
         wrapped_files = [FastAPIFileAdapter(f) for f in files]
 
+        # Ingest and index
         ingestor = ChatIngestor(use_session_dirs=True)
         session_id = ingestor.session_id
 
@@ -113,6 +130,7 @@ async def upload(files: List[UploadFile] = File(...)) -> UploadResponse:
         SESSIONS[session_id] = []
 
         return UploadResponse(session_id=session_id, indexed=True, message="Indexing complete with MMR")
+
     except DocumentPortalException as e:
         raise HTTPException(status_code=500, detail=str(e))
     except Exception as e:
@@ -123,6 +141,7 @@ async def upload(files: List[UploadFile] = File(...)) -> UploadResponse:
 async def chat(req: ChatRequest) -> ChatResponse:
     session_id = req.session_id
     message = req.message.strip()
+
     if not session_id or session_id not in SESSIONS:
         raise HTTPException(status_code=400, detail="Invalid or expired session_id. Re-upload documents.")
     if not message:
@@ -158,13 +177,17 @@ async def chat(req: ChatRequest) -> ChatResponse:
         SESSIONS[session_id] = simple
 
         return ChatResponse(answer=answer)
+
     except DocumentPortalException as e:
         raise HTTPException(status_code=500, detail=str(e))
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Chat failed: {e}")
 
 
-# Uvicorn entrypoint for `python main.py` (optional)
+# ----------------------------
+# Uvicorn entrypoint
+# ----------------------------
 if __name__ == "__main__":
     import uvicorn
+
     uvicorn.run("main:app", host="0.0.0.0", port=int(os.getenv("PORT", "8000")), reload=True)
