@@ -22,7 +22,7 @@ This project provides a scalable RAG pipeline that allows users to upload docume
 ## ✨ Features
 
 - **Multi-format Document Support**: Process PDF, DOCX, TXT, and more
-- **Semantic Search**: FAISS-powered vector similarity search
+- **Advanced Retrieval**: FAISS-powered MMR (Maximal Marginal Relevance) search for diverse results
 - **RAG Pipeline**: LangChain integration for intelligent answer synthesis
 - **Source Attribution**: Track answers back to specific document pages
 - **RESTful API**: FastAPI-based endpoints with automatic documentation
@@ -243,4 +243,3 @@ For questions, bug reports, or feature requests:
 
 **Built with ❤️ using FastAPI, LangChain, and FAISS**
 
-*For detailed technical documentation and architecture diagrams, visit the [Wiki](https://github.com/ShubhamTheDataGuy/multi_doc_project/wiki).*
